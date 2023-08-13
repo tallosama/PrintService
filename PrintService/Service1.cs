@@ -98,26 +98,31 @@ namespace PrintService
                 //    printDocument.Print();
                 //}
 
-
-                PrintDocument printDocument = new PrintDocument();
-                printDocument.PrintPage += new PrintPageEventHandler(ImprimirContenido);
-
-                PrintController printController = new StandardPrintController();
-                printDocument.PrintController = printController;
-
+                ////////¨PENDIENTE//////////
+                //PrintDocument printDocument = new PrintDocument();
+                //printDocument.PrintPage += new PrintPageEventHandler(ImprimirContenido);
+                //PrintController printController = new StandardPrintController();
+                //printDocument.PrintController = printController;
                 // Configura el nombre de la impresora, si lo deseas
                 //printDocument.PrinterSettings.PrinterName = "NombreDeTuImpresora";
-
-                printDocument.Print();
-
+                // printDocument.Print();
 
 
-                //var parsedData = JObject.Parse(data);
-                //if (parsedData["nombre"].ToString() == "Ejemplo")
 
-                //{
+                var parsedData = JObject.Parse(data);
+                if (parsedData["JsonData"]!=null)
+                {
 
-                //}
+                    string rutaArchivo = "C:\\printerService\\ImpresionDone " + DateTime.Now.ToString("dd.MM.yyyy HH.mm.ss", CultureInfo.InvariantCulture) + ".txt";
+                    using (System.IO.StreamWriter writer = new StreamWriter(rutaArchivo))
+                    {
+                        writer.WriteLine("Impresión done!: ");
+                        writer.WriteLine("xDDDDDDD "+ parsedData["valorFront"]);
+                        writer.WriteLine("Mensaje: " + parsedData["JsonData"]);
+
+                    }
+
+                }
                 return "true";
             }
             catch (Exception ex)
@@ -136,7 +141,7 @@ namespace PrintService
         }
         private static void ImprimirContenido(object sender, PrintPageEventArgs e)
         {
-            string contenido = "¡Hola, esta es una impresión de prueba desde una consola!";
+            string contenido = "¡TEST DE IMPRESION!";
 
             using (Font font = new Font("Arial", 12))
             {
