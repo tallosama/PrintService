@@ -10,8 +10,6 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading; 
 using System.Windows.Forms; 
-//using static Uno.UI.FeatureConfiguration;
-//using PrintDocument = System.Drawing.Printing.PrintDocument;
 
 namespace PrintService
 {
