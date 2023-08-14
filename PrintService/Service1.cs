@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json.Linq;
-using System; 
+﻿
+using Newtonsoft.Json;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Globalization;
-using System.IO; 
+using System.IO;
 using System.Net;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading; 
-using System.Windows.Forms; 
 
 namespace PrintService
 {
@@ -41,13 +41,13 @@ namespace PrintService
             if (!listener.IsListening) return;
 
             HttpListenerContext context = listener.EndGetContext(result);
-           ThreadPool.QueueUserWorkItem((o) =>
+            ThreadPool.QueueUserWorkItem((o) =>
             {
                 var data = ReadDataFromRequest(context.Request);
-                string resultado = ProcessRequest(data);
-         
-                byte[] buffer = Encoding.UTF8.GetBytes("{\"resultado\": \""+ resultado + "\"}");
-                context.Response.ContentType = "application/json"; 
+                string resultado = printService(data);
+
+                byte[] buffer = Encoding.UTF8.GetBytes("{\"resultado\": \"" + resultado + "\"}");
+                context.Response.ContentType = "application/json";
                 context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 context.Response.Headers.Add("Access-Control-Allow-Methods", "POST");
                 context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Accept");
@@ -57,7 +57,7 @@ namespace PrintService
                 context.Response.OutputStream.Close();
 
                 listener.BeginGetContext(ProcessRequest, listener);
-            }); 
+            });
         }
         private string ReadDataFromRequest(HttpListenerRequest request)
         {
@@ -66,9 +66,9 @@ namespace PrintService
                 return reader.ReadToEnd();
             }
         }
-    
 
-        private string ProcessRequest(string data)
+
+        private string printService(string json)
         {
             try
             {
@@ -107,22 +107,44 @@ namespace PrintService
                 //printDocument.PrinterSettings.PrinterName = "NombreDeTuImpresora";
                 // printDocument.Print();
 
-
-
-                var parsedData = JObject.Parse(data);
-                if (parsedData["JsonData"]!=null)
+                //    var parsedData = Newtonsoft.Json.Linq.JObject.Parse( json);
+                dynamic parsedData = JsonConvert.DeserializeObject<dynamic>(json);
+                
+                if (parsedData != null)
                 {
+                    
+                    PrintDocument printDocument = new PrintDocument();
+                 
+                    printDocument.PrintPage += new PrintPageEventHandler(ImprimirContenido);
 
-                    string rutaArchivo = "C:\\printerService\\ImpresionDone " + DateTime.Now.ToString("dd.MM.yyyy HH.mm.ss", CultureInfo.InvariantCulture) + ".txt";
-                    using (System.IO.StreamWriter writer = new StreamWriter(rutaArchivo))
-                    {
-                        writer.WriteLine("Impresión done!: ");
-                        writer.WriteLine("xDDDDDDD "+ parsedData["valorFront"]);
-                        writer.WriteLine("Mensaje: " + parsedData["JsonData"]);
+                    // Configuración
+                    printDocument.DefaultPageSettings.PaperSize = new PaperSize("Custom", 300, 1000);
+                    printDocument.DefaultPageSettings.PaperSource = printDocument.PrinterSettings.PaperSources[0];
+                    printDocument.DefaultPageSettings.Landscape = false;
 
-                    }
-
+                    PrintController printController = new StandardPrintController();
+                    printDocument.PrintController = printController;
+                  
+                    printDocument.PrinterSettings.PrinterName = parsedData.nombreImpresora;
+                 
+                    printDocument.Print();
                 }
+                 
+                //////////////TEST DE DOCUMENTO
+                //var parsedData = JObject.Parse(data);
+                //if (parsedData["JsonData"]!=null)
+                //{
+
+                //    string rutaArchivo = "C:\\printerService\\ImpresionDone " + DateTime.Now.ToString("dd.MM.yyyy HH.mm.ss", CultureInfo.InvariantCulture) + ".txt";
+                //    using (System.IO.StreamWriter writer = new StreamWriter(rutaArchivo))
+                //    {
+                //        writer.WriteLine("Impresión done!: ");
+                //        writer.WriteLine("xDDDDDDD "+ parsedData["valorFront"]);
+                //        writer.WriteLine("Mensaje: " + parsedData["JsonData"]);
+
+                //    }
+
+                //}
                 return "true";
             }
             catch (Exception ex)
@@ -130,23 +152,33 @@ namespace PrintService
                 string rutaArchivo = "C:\\printerService\\Logs\\ErrorDeImpresion " + DateTime.Now.ToString("dd.MM.yyyy HH.mm.ss", CultureInfo.InvariantCulture) + ".txt";
                 using (System.IO.StreamWriter writer = new StreamWriter(rutaArchivo))
                 {
-                    writer.WriteLine("Exepcion: "+ex.GetType().ToString());
+                    writer.WriteLine("Exepcion: " + ex.GetType().ToString());
                     writer.WriteLine("Cadena de Exepcion: " + ex.ToString());
                     writer.WriteLine("Mensaje: " + ex.Message);
-                                        
+
                 }
-                return "Ocurrió un error: "+ex.GetType().ToString();
+                return "Ocurrió un error: " + ex.GetType() != null ? ex.GetType().ToString() : ex.Message;
             }
 
+        }
+        private static void toLog(object param, string num)
+        {
+            string rutaArchivo = "C:\\printerService\\Feed\\Log " + num + " " + DateTime.Now.ToString("dd.MM.yyyy HH.mm.ss", CultureInfo.InvariantCulture) + ".txt";
+            using (System.IO.StreamWriter writer = new StreamWriter(rutaArchivo))
+            {
+
+                writer.WriteLine(  param);
+
+            }
         }
         private static void ImprimirContenido(object sender, PrintPageEventArgs e)
         {
-            string contenido = "¡TEST DE IMPRESION!";
-
+            string contenido = "¡TEST DE IMPRESION!"; 
             using (Font font = new Font("Arial", 12))
-            {
+            { 
                 e.Graphics.DrawString(contenido, font, Brushes.Black, new PointF(100, 100));
-            }
+            } 
         }
     }
 }
+
